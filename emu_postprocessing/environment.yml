@@ -10,3 +10,4 @@ dependencies:
     - mayavi
     - plotly
     - chart-studio
+    - matplotlib
