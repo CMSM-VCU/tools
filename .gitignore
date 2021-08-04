@@ -129,3 +129,4 @@ dmypy.json
 .pyre/
 
 emu_postprocessing/test_data/**
+.vscode/**
