@@ -1,0 +1,12 @@
+name: emu-post
+channels:
+    - plotly
+    - conda-forge
+    - defaults
+dependencies:
+    - python=3.9
+    - numpy
+    - h5py
+    - mayavi
+    - plotly
+    - chart-studio
