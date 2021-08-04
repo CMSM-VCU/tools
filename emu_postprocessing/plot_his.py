@@ -18,7 +18,6 @@ import plotly.graph_objs as go
 #########################################################################################
 #                                      PARAMETERS                                       #
 #########################################################################################
-COLUMN_WIDTH = 15
 # fmt: off
 NAME_MAP = {
     "iter":      "Timestep",
@@ -87,7 +86,7 @@ def read_his_data(filename):
                                equal to the number of timesteps or history dumps
     """
     return np.genfromtxt(
-        filename, dtype=None, delimiter=COLUMN_WIDTH, names=True, skip_header=1
+        filename, dtype=None, delimiter=",", names=True, skip_header=1
     )
 
 

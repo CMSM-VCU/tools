@@ -36,7 +36,6 @@ import os
 #########################################################################################
 #                                      PARAMETERS                                       #
 #########################################################################################
-COLUMN_WIDTH = 15
 # fmt: off
 H5_LABELS = {
     "iter":         "Time_Steps",
@@ -88,7 +87,7 @@ def read_individual_file(filename):
                                of file. Dimensions [nodes x number of fields]
     """
     try:
-        data = np.genfromtxt(filename, dtype=None, delimiter=COLUMN_WIDTH, names=True)
+        data = np.genfromtxt(filename, dtype=None, delimiter=",", names=True)
         if not data.shape:
             data = np.squeeze(np.reshape(data, (1, -1)), axis=-1)
         return data
