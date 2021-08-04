@@ -28,10 +28,14 @@ must be 1D.
 The list "exclude" can be used to exclude fields from the output h5 for space-saving.
 The list uses the original column names in the plot files.
 """
-import numpy as np
-import h5py
 import glob
 import os
+from pathlib import Path
+import sys
+from typing import Union
+
+import h5py
+import numpy as np
 
 #########################################################################################
 #                                      PARAMETERS                                       #
@@ -175,7 +179,7 @@ def convert_columns_to_special(columns, data):
         return None
 
 
-def parse_file_list():
+def parse_file_list(target_directory: Union[str, Path] = Path(".")):
     """ Extract the filename template and available timesteps from the files in the
     current directory. This assumes that the plot files are named in the format
     [filename_base].[timestep].[processor]
@@ -186,16 +190,13 @@ def parse_file_list():
     """
     # Assuming filename format of [filename_base].[timestep].[processor]
     # Extract list of files from processor 0
-    file_list = glob.glob("*.0")
+    file_list = list(target_directory.glob("*.0"))
 
     # Get filename base by stripping off timestep and processor
-    filename_base = file_list[0].rsplit(".", 2)[0]
+    filename_base = str(file_list[0]).rsplit(".", 2)[0]
 
     # With these files, extract all available timesteps
-    timesteps = []
-    for file in file_list:
-        timesteps.append(int(file.split(".")[-2]))
-
+    timesteps = [int(str(file).split(".")[-2]) for file in file_list]
     timesteps = sorted(timesteps)
 
     return filename_base, timesteps
@@ -218,7 +219,11 @@ def check_if_empty(file):
 #########################################################################################
 #                                      EXECUTION                                        #
 #########################################################################################
-filename_base, timesteps = parse_file_list()
+if len(sys.argv) < 2:
+    filename_base, timesteps = parse_file_list()
+else:
+    filename_base, timesteps = parse_file_list(Path(sys.argv[1]))
+
 
 output_data = {}
 
