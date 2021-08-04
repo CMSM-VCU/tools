@@ -279,7 +279,12 @@ for name, columns in SPECIAL.items():
 
 # Remove excluded data
 for key in EXCLUDE:
-    del output_data[key]
+    output_data.pop(key, None)
+
+# Remove data fields not found in plot files
+for key in list(output_data):
+    if output_data[key] is None:
+        output_data.pop(key, None)
 
 # Add numbers of nodes
 output_data.update({"num_nodes": np.asarray(num_nodes)})
