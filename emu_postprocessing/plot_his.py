@@ -19,22 +19,22 @@ import plotly.graph_objs as go
 #                                      PARAMETERS                                       #
 #########################################################################################
 COLUMN_WIDTH = 15
-
+# fmt: off
 NAME_MAP = {
-    'iter':      'Timestep',
-    'timex':     'Time',
-    'dt':        'Step size',
-    'phid':      'Dissipated energy',
-    'ekin':      'Kinetic energy',
-    'work_bdry': 'Boundary work'
+    "iter":      "Timestep",
+    "timex":     "Time",
+    "dt":        "Step size",
+    "phid":      "Dissipated energy",
+    "ekin":      "Kinetic energy",
+    "work_bdry": "Boundary work"
 }
 
-CATEGORIES = ('x1',  'x2',    'x3',
-              'u1',  'u2',    'u3',
-              'v1',  'v2',    'v3',
-              'dmg', 'stmax', 'scmax',
-              'force')
-
+CATEGORIES = ("x1",  "x2",    "x3",
+              "u1",  "u2",    "u3",
+              "v1",  "v2",    "v3",
+              "dmg", "stmax", "scmax",
+              "force")
+# fmt: on
 
 #########################################################################################
 #                                      FUNCTIONS                                        #
@@ -46,11 +46,11 @@ def get_filename():
         filename (str): name of history file that will be read
     """
     if len(sys.argv) < 2:
-        filename = './emu.his'
-        print('No filename provided. Assuming ./emu.his ...')
+        filename = "./emu.his"
+        print("No filename provided. Assuming ./emu.his ...")
     else:
         filename = sys.argv[1]
-        print('Reading', filename, '...')
+        print("Reading", filename, "...")
 
     return filename
 
@@ -69,7 +69,7 @@ def get_number_of_node_histories(filename):
     with open(filename) as file:
         first_line = file.readline()
         num_histories = int(first_line.split()[-1])
-    print('Reading from %i node histories' % (num_histories))
+    print("Reading from %i node histories" % (num_histories))
     return num_histories
 
 
@@ -86,8 +86,9 @@ def read_his_data(filename):
         (structured np array): all extracted data with column names. Number of rows is
                                equal to the number of timesteps or history dumps
     """
-    return np.genfromtxt(filename, dtype=None, delimiter=COLUMN_WIDTH,
-                         names=True, skip_header=1)
+    return np.genfromtxt(
+        filename, dtype=None, delimiter=COLUMN_WIDTH, names=True, skip_header=1
+    )
 
 
 def remap_column_names(data_names, name_map):
@@ -139,7 +140,7 @@ num_histories = get_number_of_node_histories(filename)
 
 data = read_his_data(filename)
 
-print('Reading from %i node histories' % (num_histories))
+print("Reading from %i node histories" % (num_histories))
 print(data.dtype.names)
 
 data.dtype.names = remap_column_names(data.dtype.names, NAME_MAP)
@@ -149,41 +150,26 @@ datasets = populate_datasets(CATEGORIES, data.dtype.names)
 #     for label in datasets['u1']: data[label]
 
 # Add dataset that contains all columns
-datasets.update({'all': data.dtype.names})
+datasets.update({"all": data.dtype.names})
 
 # Separate time and timestep for easy access
-time = data['Time']
-timestep = data['Timestep']
+time = data["Time"]
+timestep = data["Timestep"]
 
 """ Plot data """
 plotdata = []
-for name in datasets['all']:
-    trace = go.Scatter(
-        x = time,
-        y = data[name],
-        mode = 'lines',
-        name = name
-    )
+for name in datasets["all"]:
+    trace = go.Scatter(x=time, y=data[name], mode="lines", name=name)
     plotdata.append(trace)
 
 layout = go.Layout(
     autosize=False,
     width=800,
     height=600,
-    margin=go.layout.Margin(
-        l=50,
-        r=50,
-        b=100,
-        t=100,
-        pad=4
-    ),
-    xaxis=go.layout.XAxis(
-        title='Time (s)',
-        titlefont=dict(size=30),
-        automargin=True
-    ),
-    paper_bgcolor='#7f7f7f',
-    plot_bgcolor='#c7c7c7'
+    margin=go.layout.Margin(l=50, r=50, b=100, t=100, pad=4),
+    xaxis=go.layout.XAxis(title="Time (s)", titlefont=dict(size=30), automargin=True),
+    paper_bgcolor="#7f7f7f",
+    plot_bgcolor="#c7c7c7",
 )
 
 fig = go.Figure(data=plotdata, layout=layout)

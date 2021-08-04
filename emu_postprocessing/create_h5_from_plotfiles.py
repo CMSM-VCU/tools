@@ -1,6 +1,5 @@
 """ Extracts and compresses data from Emu plot files.
-Plot files must be in column-wise format with each column being exactly 15 characters
-wide. The first row of each plot file must be the column titles.
+Plot files must be in CSV format. The first row of each plot file must be the column titles.
 
 Plot files must be name [filename].[timestep].[processor]
 
@@ -38,41 +37,41 @@ import os
 #                                      PARAMETERS                                       #
 #########################################################################################
 COLUMN_WIDTH = 15
-
+# fmt: off
 H5_LABELS = {
-    'iter':         'Time_Steps',
-    'node_type':    'Material',
-    'nofail':       'Nofail',
-    'mypr':         'Processor',
-    'nodbd':        'Boundary',
-    'x':            'Coordinates',
-    'u':            'Disp',
-    'v':            'Vel',
-    'damage':       'DMG',
-    'ecnode':       'Ecrit',
-    'stretch':      'Stretch',
-    'yldfr':        'Yield_Frac',
-    'wt':           'W',
-    'fnorm':        'Fnorm_Fac',
-    'edt':          'Diss_Energy_Dens',
-    'von_mises':    'Von_Mises',
-    'timex':        'Time',
-    'strs_cauchy':  'Cauchy_Stress',
-    'left_strtch':  'Left_Stretch',
-    'num_nodes':    'Num_Nodes'
+    "iter":         "Time_Steps",
+    "node_type":    "Material",
+    "nofail":       "Nofail",
+    "mypr":         "Processor",
+    "nodbd":        "Boundary",
+    "x":            "Coordinates",
+    "u":            "Disp",
+    "v":            "Vel",
+    "damage":       "DMG",
+    "ecnode":       "Ecrit",
+    "stretch":      "Stretch",
+    "yldfr":        "Yield_Frac",
+    "wt":           "W",
+    "fnorm":        "Fnorm_Fac",
+    "edt":          "Diss_Energy_Dens",
+    "von_mises":    "Von_Mises",
+    "timex":        "Time",
+    "strs_cauchy":  "Cauchy_Stress",
+    "left_strtch":  "Left_Stretch",
+    "num_nodes":    "Num_Nodes"
 }
 
-VECTORS = ('x', 'u', 'v', 'nodbd')
-MATRICES = ('strs_cauchy', 'left_strtch')
+VECTORS = ("x", "u", "v", "nodbd")
+MATRICES = ("strs_cauchy", "left_strtch")
 SPECIAL = {
-    'damage': ['dmg', 'dmgi', 'dmgm'],
-    'stretch': ['stnode', 'scnode']
+    "damage": ["dmg", "dmgi", "dmgm"],
+    "stretch": ["stnode", "scnode"]
 }
 EXCLUDE = np.hstack([[name+str(i) for name in VECTORS for i in range(1, 4)],
                      [name+str(i)+str(j) for name in MATRICES for i in range(1, 4)
                                                         for j in range(1, 4)],
-                     'dmg', 'dmgi', 'dmgm', 'stnode', 'scnode', 'm_global'])
-
+                     "dmg", "dmgi", "dmgm", "stnode", "scnode", "m_global"])
+# fmt: on
 
 #########################################################################################
 #                                      FUNCTIONS                                        #
@@ -94,9 +93,9 @@ def read_individual_file(filename):
             data = np.squeeze(np.reshape(data, (1, -1)), axis=-1)
         return data
     except ValueError:
-        print('Error reading file (probably inconsistent number of columns):', filename)
+        print("Error reading file (probably inconsistent number of columns):", filename)
     except:
-        print('Something went wrong:', filename)
+        print("Something went wrong:", filename)
 
 
 def read_timestep_files(file_list):
@@ -120,10 +119,12 @@ def convert_columns_to_vector(name_base, data, isize=3):
                     Dimensions [timesteps x nodes x isize]
     """
     if any(name_base in key for key in data.keys()):
-        return np.stack([data[key] for key in
-                        [name_base+str(i) for i in range(1, isize+1)]], axis=-1)
+        return np.stack(
+            [data[key] for key in [name_base + str(i) for i in range(1, isize + 1)]],
+            axis=-1,
+        )
     else:
-        print('Vector: Name not found in columns:', name_base)
+        print("Vector: Name not found in columns:", name_base)
         return None
 
 
@@ -142,12 +143,14 @@ def convert_columns_to_matrix(name_base, data, isize=3, jsize=3):
         (np array): resulting matrix data for all timesteps and nodes.
                     Dimensions [timesteps x nodes x isize x jsize]
     """
+    # fmt: off
     if any(name_base in key for key in data.keys()):
         return np.stack([np.stack([data[key] for key in
                                   [name_base+str(i)+str(j) for i in range(1, isize+1)]], axis=-1)
                                                      for j in range(1, jsize+1)], axis=-1)
+    # fmt: on
     else:
-        print('Matrix: Name not found in columns', name_base)
+        print("Matrix: Name not found in columns", name_base)
         return None
 
 
@@ -169,7 +172,7 @@ def convert_columns_to_special(columns, data):
     if True:
         return np.stack([data[key] for key in columns], axis=-1)
     else:
-        print('Special: Not all special columns found.')
+        print("Special: Not all special columns found.")
         return None
 
 
@@ -184,15 +187,15 @@ def parse_file_list():
     """
     # Assuming filename format of [filename_base].[timestep].[processor]
     # Extract list of files from processor 0
-    file_list = glob.glob('*.0')
+    file_list = glob.glob("*.0")
 
     # Get filename base by stripping off timestep and processor
-    filename_base = file_list[0].rsplit('.', 2)[0]
+    filename_base = file_list[0].rsplit(".", 2)[0]
 
     # With these files, extract all available timesteps
     timesteps = []
     for file in file_list:
-        timesteps.append(int(file.split('.')[-2]))
+        timesteps.append(int(file.split(".")[-2]))
 
     timesteps = sorted(timesteps)
 
@@ -202,7 +205,7 @@ def parse_file_list():
 def check_if_empty(file):
     """
     """
-    with open(file)as f:
+    with open(file) as f:
         for i, l in enumerate(f):
             pass
         if i > 0:
@@ -225,7 +228,7 @@ num_fields = None
 
 # Extract raw data and store in output_data dictionary
 for i, ts in enumerate(timesteps):
-    filename = filename_base + '.' + str(ts) + '.*'
+    filename = filename_base + "." + str(ts) + ".*"
     file_list = glob.glob(filename)
 
     not_empty = []
@@ -235,24 +238,24 @@ for i, ts in enumerate(timesteps):
 
     if not_empty:
         input_data = read_timestep_files(not_empty)
-        print(ts, ': ', input_data.shape, len(input_data.dtype.names))
+        print(ts, ": ", input_data.shape, len(input_data.dtype.names))
         num_nodes.append(input_data.shape[0])
 
         if not num_fields:
             num_fields = len(input_data.dtype.names)
 
         if input_data.shape[0] < max(num_nodes):
-            print(input_data.shape[0], '<', max(num_nodes), 'padding...')
+            print(input_data.shape[0], "<", max(num_nodes), "padding...")
             input_data.resize(max(num_nodes))
 
         if i == 0:  # Initialize dictionary entries
             for name in input_data.dtype.names:
                 output_data.update({name: input_data[name]})
-        else:       # Append subsequent timesteps to existing dictionary entries
+        else:  # Append subsequent timesteps to existing dictionary entries
             for name in input_data.dtype.names:
                 output_data[name] = np.dstack((output_data[name], input_data[name]))
     else:
-        print('Warning: Timestep', ts, 'contains no data.')
+        print("Warning: Timestep", ts, "contains no data.")
 
 # Reorder dimensions in output_data arrays and remove extra dimensions
 for name in output_data:
@@ -275,23 +278,31 @@ for key in EXCLUDE:
     del output_data[key]
 
 # Add numbers of nodes
-output_data.update({'num_nodes': np.asarray(num_nodes)})
+output_data.update({"num_nodes": np.asarray(num_nodes)})
 
 # Remove extra dimension from time and timestep fields
 # Dimensions from [timesteps x nodes] to [timesteps]
-output_data['timex'] = output_data['timex'][:, 0]
-output_data['iter'] = output_data['iter'][:, 0]
+output_data["timex"] = output_data["timex"][:, 0]
+output_data["iter"] = output_data["iter"][:, 0]
 
 # Open h5 file
-hf = h5py.File('simulation.h5', 'w')
+hf = h5py.File("simulation.h5", "w")
 
 # Save output_data to h5 file
 for name in output_data:
     print(output_data[name].shape)
-    hf.create_dataset(name=H5_LABELS.get(name, name),
-                      data=output_data[name],
-                      compression="gzip", compression_opts=9)
+    hf.create_dataset(
+        name=H5_LABELS.get(name, name),
+        data=output_data[name],
+        compression="gzip",
+        compression_opts=9,
+    )
 
 hf.close()
-print('Saved', output_data['mypr'].shape[1], 'nodes across',
-      output_data['mypr'].shape[0], 'timesteps to simulation.h5')
+print(
+    "Saved",
+    output_data["mypr"].shape[1],
+    "nodes across",
+    output_data["mypr"].shape[0],
+    "timesteps to simulation.h5",
+)
