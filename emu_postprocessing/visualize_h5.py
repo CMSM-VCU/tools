@@ -20,13 +20,14 @@ Requires:
 """
 import os
 import sys
-from optparse import OptionParser
+from argparse import ArgumentParser
 
 import h5py
 from loguru import logger
 import mayavi
 import numpy as np
 from mayavi import mlab
+from gooey import Gooey
 
 #########################################################################################
 #                                      PARAMETERS                                       #
@@ -36,19 +37,20 @@ DEBUG = True
 # fmt: off
 PARSER_DICT = {
   # Label            Command line inputs      Dest           Type      Action       Default   Help
-    "extents":      ["-e", "--extents",      "extents",     "string", "store",      None,    "Spatial extents of included points [-x, +x, -y, +y, -z, +z]. Write 'inf' to specify infinity."],
-    "selection":    ["-s", "--show",         "selection",   "string", "store",      "dmg",   "Dataset selected for viewing, chosen from the labels in OUTPUT_DICT."],
-    "grid_spacing": ["-d", "--grid_spacing", "gs",          "float",  "store",      0.5,     "Grid spacing of dataset. Sets size of datapoints."],
-    "write_image":  ["-i", "--write",        "write_image",  None,    "store_true", False,   "Whether plot will be saved to file. If so, the plot will not appear on screen."],
-    "min_plot":     ["-m", "--min_plot",     "min_plot",    "float",  "store",      None,    "Minimum displayed output value. Any datapoints below this are omitted."],
-    "max_plot":     ["-M", "--max_plot",     "max_plot",    "float",  "store",      None,    "Maximum displayed output value. Any datapoints above this are omitted."],
-    "min_legend":   ["-l", "--min_legend",   "min_legend",  "float",  "store",      None,    "Minimum color scale value. Datapoints below this are the same color."],
-    "max_legend":   ["-L", "--max_legend",   "max_legend",  "float",  "store",      None,    "Maximum color scale value. Datapoints above this are the same color."],
-    "exaggeration": ["-x", "--exag",         "exag",        "float",  "store",      0.0,     "Displacement exaggeration factor. 0.0 plots reference configuration."],
-    "timestep":     ["-t", "--timestep",     "timestep_output", "int", "store",     1,       "Timestep number to be viewed."],
-    "greyscale":    ["-g", "--greyscale",    "greyscale",    None,    "store_true", False,   "Whether colorscale is greyscale (`Greys`), instead of blue-red"],
-    "view":         ["-v", "--view",         "view",        "string", "store",      None,    "[unusable] View angle, one of (x+, x-, y+, y-, z+, z-, iso)"],
-    "scalebar":     ["-b", "--scalebar",     "scalebar",     None,    "store_false",True,    "Whether to enable the scalebar (scalebar enabled by default)"]
+    "filename":     ["filename", None,        None,          str,    "store",      "simulation.h5", "Path and name of the h5 file to be visualized."],
+    "extents":      ["-e", "--extents",      "extents",      str,    "store",      None,    "Spatial extents of included points [-x, +x, -y, +y, -z, +z]. Write 'inf' to specify infinity."],
+    "selection":    ["-s", "--show",         "selection",    str,    "store",      "dmg",   "Dataset selected for viewing, chosen from the labels in OUTPUT_DICT."],
+    "grid_spacing": ["-d", "--grid_spacing", "gs",           float,  "store",      0.5,     "Grid spacing of dataset. Sets size of datapoints."],
+    "write_image":  ["-i", "--write",        "write_image",  None,   "store_true", None,   "Whether plot will be saved to file. If so, the plot will not appear on screen."],
+    "min_plot":     ["-m", "--min_plot",     "min_plot",     float,  "store",      None,    "Minimum displayed output value. Any datapoints below this are omitted."],
+    "max_plot":     ["-M", "--max_plot",     "max_plot",     float,  "store",      None,    "Maximum displayed output value. Any datapoints above this are omitted."],
+    "min_legend":   ["-l", "--min_legend",   "min_legend",   float,  "store",      None,    "Minimum color scale value. Datapoints below this are the same color."],
+    "max_legend":   ["-L", "--max_legend",   "max_legend",   float,  "store",      None,    "Maximum color scale value. Datapoints above this are the same color."],
+    "exaggeration": ["-x", "--exag",         "exag",         float,  "store",      0.0,     "Displacement exaggeration factor. 0.0 plots reference configuration."],
+    "timestep":     ["-t", "--timestep",     "timestep_output", int, "store",      1,       "Timestep number to be viewed."],
+    "greyscale":    ["-g", "--greyscale",    "greyscale",    None,   "store_true", None,   "Whether colorscale is greyscale (`Greys`), instead of blue-red"],
+    "view":         ["-v", "--view",         "view",         str,    "store",      None,    "[unusable] View angle, one of (x+, x-, y+, y-, z+, z-, iso)"],
+    "scalebar":     ["-b", "--scalebar",     "scalebar",     None,   "store_false",None,    "Whether to enable the scalebar (scalebar enabled by default)"],
 }
 
 OUTPUT_DICT = {
@@ -117,22 +119,7 @@ WINDOW = {  # Window properties
 #########################################################################################
 #                                      FUNCTIONS                                        #
 #########################################################################################
-def get_filename():
-    """Get h5 file name from command line argument. Assign default if not found.
-
-    Returns:
-        filename (str): name of h5 file that will be read
-    """
-    if len(sys.argv) < 2:
-        filename = "./simulation.h5"
-        print("No filename provided. Assuming ./simulation.h5 ...")
-    else:
-        filename = sys.argv[1]
-        print("Reading", filename, "...")
-
-    return filename
-
-
+@Gooey
 def parse_options(parser_dict):
     """Define and parse command line options according to dictionary containing option
     data.
@@ -143,22 +130,35 @@ def parse_options(parser_dict):
     Returns:
         options (dict): Dictionary containing parsed or default option values
     """
-    parser = OptionParser()
+    parser = ArgumentParser()
 
-    for key in parser_dict:
-        parser.add_option(
-            parser_dict[key][0],
-            parser_dict[key][1],
-            dest=parser_dict[key][2],
-            type=parser_dict[key][3],
-            action=parser_dict[key][4],
-            default=parser_dict[key][5],
-            help=parser_dict[key][6],
-        )
+    for option in parser_dict.values():
+        if not option[0].startswith("-"):
+            parser.add_argument(
+                option[0],
+                type=option[3],
+                action=option[4],
+                default=option[5],
+                help=option[6],
+            )
+        elif option[4] not in ["store_true", "store_false"]:
+            parser.add_argument(
+                option[0],
+                option[1],
+                dest=option[2],
+                type=option[3],
+                action=option[4],
+                default=option[5],
+                help=option[6],
+            )
+        else:
+            parser.add_argument(
+                option[0], option[1], dest=option[2], action=option[4], help=option[6],
+            )
 
-    options, _ = parser.parse_args()
+    args = parser.parse_args()
 
-    return options.__dict__
+    return args.__dict__
 
 
 def options_convert_extents(options):
@@ -488,12 +488,10 @@ def plot_data(datapoints, viewpoint, window, image_filename="image.png"):
 #########################################################################################
 #                                      EXECUTION                                        #
 #########################################################################################
-# Obtain h5 filename
-h5_filename = get_filename()
-
 # Read and condition command line arguments
 options = parse_options(PARSER_DICT)
 options = options_convert_extents(options)
+h5_filename = options["filename"]
 
 # Read data from h5 file
 data = open_h5(h5_filename)
