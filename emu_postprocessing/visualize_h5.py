@@ -119,7 +119,7 @@ WINDOW = {  # Window properties
 #########################################################################################
 #                                      FUNCTIONS                                        #
 #########################################################################################
-@Gooey
+@Gooey(use_cmd_args=True)
 def parse_options(parser_dict):
     """Define and parse command line options according to dictionary containing option
     data.
