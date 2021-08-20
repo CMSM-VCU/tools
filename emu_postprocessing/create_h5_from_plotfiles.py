@@ -50,7 +50,7 @@ H5_LABELS = {
     "x":            "Coordinates",
     "u":            "Disp",
     "v":            "Vel",
-    "damage":       "DMG",
+    "dmg":          "DMG",
     "ecnode":       "Ecrit",
     "stretch":      "Stretch",
     "yldfr":        "Yield_Frac",
@@ -73,7 +73,7 @@ SPECIAL = {
 EXCLUDE = np.hstack([[name+str(i) for name in VECTORS for i in range(1, 4)],
                      [name+str(i)+str(j) for name in MATRICES for i in range(1, 4)
                                                         for j in range(1, 4)],
-                     "dmg", "dmgi", "dmgm", "stnode", "scnode", "m_global"])
+                     "dmgi", "dmgm", "stnode", "scnode", "m_global"])
 # fmt: on
 
 #########################################################################################
