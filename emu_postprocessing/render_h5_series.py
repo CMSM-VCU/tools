@@ -1,5 +1,5 @@
 import os
-from optparse import OptionParser
+from argparse import ArgumentParser
 from pathlib import Path
 
 import h5py
@@ -39,7 +39,7 @@ def set_general_plot_parameters(plot, view):
 
 
 def parse_options():
-    parser = OptionParser(usage="usage: %prog somefile.h5")
+    parser = ArgumentParser(usage="usage: %(prog)s somefile.h5")
     parser.set_defaults(
         extents=None,
         show="dmg",
@@ -56,22 +56,23 @@ def parse_options():
     )
 
     # fmt: off
-    parser.add_option("-e","--extents",     dest="extents",     type="string", help='Spatial extents of included points [xmin, xmax, ymin, ymax, zmin, zmax].  Write "inf" to specify infinity..')
-    parser.add_option("-s","--show",        dest="show",        type="string")
-    parser.add_option("-i",                 dest="write_image", action="store_true")
-    parser.add_option(     "--min_plot",    dest="min_plot",    type="float")
-    parser.add_option(     "--max_plot",    dest="max_plot",    type="float")
-    parser.add_option(     "--min_legend",  dest="min_legend",  type="float")
-    parser.add_option(     "--max_legend",  dest="max_legend",  type="float")
-    parser.add_option("-x","--exag",        dest="exag",        type="float")
-    parser.add_option("-t","--timestep_list", dest="timestep_list", type="string", help="Timesteps must be entered as comma-separated list with no whitespace. e.g. 100,200,300")
-    parser.add_option("-a",                 dest="write_all_timesteps", action="store_true")
-    parser.add_option("-v","--view",        dest="view",        type="string")
-    parser.add_option("-b","--scalebar",    dest="scalebar",    action="store_false")
+    parser.add_argument("filename", type=str)
+    parser.add_argument("-e","--extents",     dest="extents",     type=str, help='Spatial extents of included points [xmin, xmax, ymin, ymax, zmin, zmax].  Write "inf" to specify infinity..')
+    parser.add_argument("-s","--show",        dest="show",        type=str)
+    parser.add_argument("-i",                 dest="write_image", action="store_true")
+    parser.add_argument(     "--min_plot",    dest="min_plot",    type=float)
+    parser.add_argument(     "--max_plot",    dest="max_plot",    type=float)
+    parser.add_argument(     "--min_legend",  dest="min_legend",  type=float)
+    parser.add_argument(     "--max_legend",  dest="max_legend",  type=float)
+    parser.add_argument("-x","--exag",        dest="exag",        type=float)
+    parser.add_argument("-t","--timestep_list", dest="timestep_list", type=str, help="Timesteps must be entered as comma-separated list with no whitespace. e.g. 100,200,300")
+    parser.add_argument("-a",                 dest="write_all_timesteps", action="store_true")
+    parser.add_argument("-v","--view",        dest="view",        type=str)
+    parser.add_argument("-b","--scalebar",    dest="scalebar",    action="store_false")
     # fmt: on
 
-    (options, args) = parser.parse_args()
-    return options, args
+    args = parser.parse_args()
+    return args
 
 
 def select_output(hf, selection, timestep_index):
@@ -293,20 +294,20 @@ def assemble_image_filename(opt, h5_filename, timestep):
 
 
 if __name__ == "__main__":
-    opt, args = parse_options()
+    args = parse_options()
 
     # Set h5 file name as the first argument
-    h5_filename = args[0]
+    h5_filename = args.filename
 
     # Prep the extents for separation.  eval() is used to convert from the parser input to a list of sorts then np.array() converst list to array
-    if opt.extents:
-        opt.extents = np.array(eval(opt.extents))
+    if args.extents:
+        args.extents = np.array(eval(args.extents))
 
-    if opt.timestep_list:
-        timesteps = eval(opt.timestep_list)
+    if args.timestep_list:
+        timesteps = eval(args.timestep_list)
         if not isinstance(timesteps, list) and not isinstance(timesteps, tuple):
             timesteps = [timesteps]
-    if opt.write_all_timesteps:
+    if args.write_all_timesteps:
         timesteps = "all"
 
-    scatter_visualize_damage(h5_filename, timesteps, opt)
+    scatter_visualize_damage(h5_filename, timesteps, args)
