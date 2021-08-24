@@ -19,11 +19,9 @@ Requires:
     sys
 """
 import os
-import sys
 from argparse import ArgumentParser
 
 import h5py
-from loguru import logger
 import mayavi
 import numpy as np
 from mayavi import mlab
@@ -320,7 +318,7 @@ def cull_data_by_value(coords, output, limits=None):
     if limits is not None:
         wanted = (output >= limits[0]) & (output <= limits[1])
 
-        logger.debug(
+        print(
             f"Cull by value: {np.count_nonzero(wanted)}/{len(output)} points remaining."
         )
         return coords[wanted, :], output[wanted]
