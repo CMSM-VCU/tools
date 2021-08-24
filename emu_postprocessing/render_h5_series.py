@@ -6,17 +6,13 @@ import h5py
 import numpy as np
 from mayavi import mlab
 
-GRID_SPACING = 0.12
 
-IMAGE_RESOLUTION = (1200, 600)
-
-
-def set_general_plot_parameters(plot, view):
+def set_general_plot_parameters(plot, view, grid_spacing):
     """
     """
-    plot.glyph.glyph_source.glyph_source.x_length = GRID_SPACING
-    plot.glyph.glyph_source.glyph_source.y_length = GRID_SPACING
-    plot.glyph.glyph_source.glyph_source.z_length = GRID_SPACING
+    plot.glyph.glyph_source.glyph_source.x_length = grid_spacing
+    plot.glyph.glyph_source.glyph_source.y_length = grid_spacing
+    plot.glyph.glyph_source.glyph_source.z_length = grid_spacing
 
     # Isometric, perspective
     if view == "iso":
@@ -41,6 +37,8 @@ def set_general_plot_parameters(plot, view):
 def parse_options():
     parser = ArgumentParser(usage="usage: %(prog)s somefile.h5")
     parser.set_defaults(
+        grid_spacing=0.5,
+        image_resolution=[800, 800],
         extents=None,
         show="dmg",
         write_image=False,
@@ -57,6 +55,8 @@ def parse_options():
 
     # fmt: off
     parser.add_argument("filename", type=str)
+    parser.add_argument("-d","--grid_spacing",dest="grid_spacing", type=float)
+    parser.add_argument("-r","--resolution", dest="image_resolution", type=float, nargs=2)
     parser.add_argument("-e","--extents",     dest="extents",     type=str, help='Spatial extents of included points [xmin, xmax, ymin, ymax, zmin, zmax].  Write "inf" to specify infinity..')
     parser.add_argument("-s","--show",        dest="show",        type=str)
     parser.add_argument("-i",                 dest="write_image", action="store_true")
@@ -219,7 +219,7 @@ def scatter_visualize_damage(h5_filename, plot_timesteps, opt):
 
             mlab.options.offscreen = True
             image_filename = image_filename_base + ext
-            mlab.figure(size=IMAGE_RESOLUTION, bgcolor=(1, 1, 1), fgcolor=(0, 0, 0))
+            mlab.figure(size=opt.image_resolution, bgcolor=(1, 1, 1), fgcolor=(0, 0, 0))
             # fmt: off
             plot = mlab.points3d(
                 x, y, z, output,
@@ -234,7 +234,7 @@ def scatter_visualize_damage(h5_filename, plot_timesteps, opt):
             # fmt: on
             if opt.scalebar:
                 mlab.scalarbar()
-            set_general_plot_parameters(plot, opt.view)
+            set_general_plot_parameters(plot, opt.view, opt.grid_spacing)
             # plot.scene.show_axes = True
             mlab.savefig(image_filename)
             mlab.close()
@@ -242,7 +242,7 @@ def scatter_visualize_damage(h5_filename, plot_timesteps, opt):
         ### NOT SAVING IMAGE / INTERACTIVE PLOTTING
         else:
             mlab.options.offscreen = False
-            mlab.figure(size=IMAGE_RESOLUTION, bgcolor=(1, 1, 1), fgcolor=(0, 0, 0))
+            mlab.figure(size=opt.image_resolution, bgcolor=(1, 1, 1), fgcolor=(0, 0, 0))
             # fmt: off
             plot = mlab.points3d(
                 x, y, z, output,
@@ -254,7 +254,7 @@ def scatter_visualize_damage(h5_filename, plot_timesteps, opt):
             )
             # fmt: on
 
-            set_general_plot_parameters(plot, opt.view)
+            set_general_plot_parameters(plot, opt.view, opt.grid_spacing)
             # plot.scene.show_axes = True
             if opt.scalebar:
                 mlab.scalarbar()
