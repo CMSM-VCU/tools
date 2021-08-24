@@ -2,6 +2,7 @@ import os
 from argparse import ArgumentParser
 from pathlib import Path
 
+from gooey import Gooey
 import h5py
 import numpy as np
 from mayavi import mlab
@@ -34,6 +35,7 @@ def set_general_plot_parameters(plot, view, grid_spacing):
         mlab.gcf().scene.parallel_projection = False
 
 
+@Gooey(use_cmd_args=True)
 def parse_options():
     parser = ArgumentParser(usage="usage: %(prog)s somefile.h5")
     parser.set_defaults(
