@@ -2,9 +2,9 @@ import os
 from argparse import ArgumentParser
 from pathlib import Path
 
-from gooey import Gooey
 import h5py
 import numpy as np
+from gooey import Gooey, GooeyParser
 from mayavi import mlab
 
 
@@ -35,9 +35,11 @@ def set_general_plot_parameters(plot, view, grid_spacing):
         mlab.gcf().scene.parallel_projection = False
 
 
-@Gooey(use_cmd_args=True)
+@Gooey(
+    use_cmd_args=True, show_success_modal=False, return_to_config=True, header_height=20
+)
 def parse_options():
-    parser = ArgumentParser(usage="usage: %(prog)s somefile.h5")
+    parser = GooeyParser(usage="usage: %(prog)s somefile.h5")
     parser.set_defaults(
         grid_spacing=0.5,
         image_resolution=[800, 800],
@@ -56,7 +58,7 @@ def parse_options():
     )
 
     # fmt: off
-    parser.add_argument("filename", type=str)
+    parser.add_argument("filename", type=str, widget="FileChooser")
     parser.add_argument("-d","--grid_spacing",dest="grid_spacing", type=float)
     parser.add_argument("-r","--resolution", dest="image_resolution", type=float, nargs=2)
     parser.add_argument("-e","--extents",     dest="extents",     type=str, help='Spatial extents of included points [xmin, xmax, ymin, ymax, zmin, zmax].  Write "inf" to specify infinity..')

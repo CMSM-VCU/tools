@@ -24,8 +24,8 @@ from argparse import ArgumentParser
 import h5py
 import mayavi
 import numpy as np
+from gooey import Gooey, GooeyParser
 from mayavi import mlab
-from gooey import Gooey
 
 #########################################################################################
 #                                      PARAMETERS                                       #
@@ -117,7 +117,9 @@ WINDOW = {  # Window properties
 #########################################################################################
 #                                      FUNCTIONS                                        #
 #########################################################################################
-@Gooey(use_cmd_args=True)
+@Gooey(
+    use_cmd_args=True, show_success_modal=False, return_to_config=True, header_height=20
+)
 def parse_options(parser_dict):
     """Define and parse command line options according to dictionary containing option
     data.
@@ -128,7 +130,7 @@ def parse_options(parser_dict):
     Returns:
         options (dict): Dictionary containing parsed or default option values
     """
-    parser = ArgumentParser()
+    parser = GooeyParser()
 
     for option in parser_dict.values():
         if not option[0].startswith("-"):
@@ -138,6 +140,7 @@ def parse_options(parser_dict):
                 action=option[4],
                 default=option[5],
                 help=option[6],
+                widget="FileChooser",
             )
         elif option[4] not in ["store_true", "store_false"]:
             parser.add_argument(
