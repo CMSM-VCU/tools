@@ -163,6 +163,9 @@ class Grid:
         self.center_grid_bb()
         self.scale(1 / np.amax(self.extents()))
 
+    def copy(self):
+        return Grid(coords = np.copy(self.coords), mats = np.copy(self.mats))
+
     def visualize(self):
         """Visualizes the array with pyvista
         """
@@ -174,7 +177,8 @@ class Grid:
 
 if __name__ == "__main__":
     grid = Grid(fname="example.grid")
+    grid2 = grid.copy()
+    grid.scale(2)
     print(grid.extents())
-    grid.center_and_normalize()
-    print(grid.extents())
+    print(grid2.extents())
 
