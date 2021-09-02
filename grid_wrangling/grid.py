@@ -159,6 +159,10 @@ class Grid:
     def append(self, other_grid: "Grid"):
         return Grid(coords=np.append(self.coords, other_grid.coords, axis=0), mats=np.append(self.coords, other_grid.coords, axis=0))
 
+    def center_and_normalize(self):
+        self.center_grid_bb()
+        self.scale(1 / np.amax(self.extents()))
+
     def visualize(self):
         """Visualizes the array with pyvista
         """
@@ -170,6 +174,7 @@ class Grid:
 
 if __name__ == "__main__":
     grid = Grid(fname="example.grid")
-    grid2 = grid.append(grid)
-    print(grid.coords.shape)
-    print(grid2.coords.shape)
+    print(grid.extents())
+    grid.center_and_normalize()
+    print(grid.extents())
+
