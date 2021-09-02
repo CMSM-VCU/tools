@@ -91,6 +91,10 @@ class Grid:
 
         return np.vstack((np.amin(self.coords, axis=0), np.amax(self.coords, axis=0))).T
 
+    def lengths(self):
+        extents = self.extents()
+        return extents[:,1] - extents[:,0]
+
     def grid_spacing(self):
         """Uses the nearest neighbor of each point to calculate the grid spacing
 
@@ -177,8 +181,6 @@ class Grid:
 
 if __name__ == "__main__":
     grid = Grid(fname="example.grid")
-    grid2 = grid.copy()
-    grid.scale(2)
     print(grid.extents())
-    print(grid2.extents())
+    print(grid.lengths())
 
