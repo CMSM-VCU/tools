@@ -18,7 +18,9 @@ class Grid:
         self.mats = None
 
         if fname is not None:
+            print("Reading grid...")
             data = np.loadtxt(fname, skiprows=1)
+            print("Reading complete!")
             self.set_coords(data[:, :3])
             self.set_mats(data[:, 3])
             pass
@@ -114,7 +116,7 @@ class Grid:
             vector (array): Amount to translate
         """
 
-        self.coords = self.coords + vector
+        self.set_coords(self.coords + vector)
 
     def scale(self, vector):
         """Scales the grid in 3D space
@@ -123,7 +125,7 @@ class Grid:
             vector (array): Amount to scale the grid by
         """
 
-        self.coords = self.coords * vector
+        self.set_coords(self.coords * vector)
 
     def center_grid_bb(self):
         """Translates the grid so its center as defined by it's extents or bounding box is 0,0,0
@@ -161,7 +163,7 @@ class Grid:
         self.mats = np.unique(self.mats, return_inverse=True)[1]  + 1
 
     def append(self, other_grid: "Grid"):
-        return Grid(coords=np.append(self.coords, other_grid.coords, axis=0), mats=np.append(self.coords, other_grid.coords, axis=0))
+        return Grid(coords=np.append(self.coords, other_grid.coords, axis=0), mats=np.append(self.mats, other_grid.mats, axis=0))
 
     def center_and_normalize(self):
         self.center_grid_bb()
