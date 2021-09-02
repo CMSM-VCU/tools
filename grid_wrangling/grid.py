@@ -163,7 +163,7 @@ class Grid:
         self.mats = np.unique(self.mats, return_inverse=True)[1]  + 1
 
     def append(self, other_grid: "Grid"):
-        return Grid(coords=np.append(self.coords, other_grid.coords, axis=0), mats=np.append(self.mats, other_grid.mats, axis=0))
+        return Grid(coords=np.append(self.coords, other_grid.coords, axis=0), mats=np.append(self.mats, other_grid.mats, axis=0).astype(np.int16))
 
     def center_and_normalize(self):
         self.center_grid_bb()
