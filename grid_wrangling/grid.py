@@ -4,7 +4,16 @@ from scipy.stats import mode
 
 class Grid:
     def __init__(self, fname=None, coords=None, mats=None):
+        """Create a grid, read in from file name or create with specified coordinates and materials
 
+        Args:
+            fname (str, optional): Filename of .grid file to read from. Defaults to None.
+            coords (np.ndarray, optional): 3D array of coordinates where each column represents a dimension. Defaults to None.
+            mats (np.ndarray, optional): 1D array of material numbers. Defaults to None.
+
+        Raises:
+            Exception: Must include either (filename) or (coordinates and materials)
+        """
         self.coords = None
         self.mats = None
 
@@ -147,6 +156,9 @@ class Grid:
 
         self.mats = np.unique(self.mats, return_inverse=True)[1]  + 1
 
+    def append(self, other_grid: "Grid"):
+        return Grid(coords=np.append(self.coords, other_grid.coords, axis=0), mats=np.append(self.coords, other_grid.coords, axis=0))
+
     def visualize(self):
         """Visualizes the array with pyvista
         """
@@ -158,5 +170,6 @@ class Grid:
 
 if __name__ == "__main__":
     grid = Grid(fname="example.grid")
-
-
+    grid2 = grid.append(grid)
+    print(grid.coords.shape)
+    print(grid2.coords.shape)
