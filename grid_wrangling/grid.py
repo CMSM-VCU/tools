@@ -63,7 +63,7 @@ class Grid:
         if type(mats) is not np.ndarray:
             raise Exception("Mats needs to be a numpy array")
         else:
-            self.mats = mats.astype(np.int16)
+            self.mats = mats.astype(np.int32)
             if np.amin(mats <= 0):
                 print("WARNING EMU DOES NOT SUPPORT NEGATIVE OR ZERO MATERIAL NUMBERS")
             if np.amax(mats > 999):
@@ -163,7 +163,7 @@ class Grid:
         self.mats = np.unique(self.mats, return_inverse=True)[1]  + 1
 
     def append(self, other_grid: "Grid"):
-        return Grid(coords=np.append(self.coords, other_grid.coords, axis=0), mats=np.append(self.mats, other_grid.mats, axis=0).astype(np.int16))
+        return Grid(coords=np.append(self.coords, other_grid.coords, axis=0), mats=np.append(self.mats, other_grid.mats, axis=0).astype(np.int32))
 
     def center_and_normalize(self):
         self.center_grid_bb()
@@ -183,6 +183,9 @@ class Grid:
 
 if __name__ == "__main__":
     grid = Grid(fname="example.grid")
-    print(grid.extents())
-    print(grid.lengths())
+    grid2 = grid.copy()
+    grid2.scale([1, 2, 1])
+    grid.append(grid2).visualize()
+    # print(grid.extents())
+    # print(grid.lengths())
 
