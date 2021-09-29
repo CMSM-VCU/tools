@@ -255,6 +255,8 @@ def scatter_visualize_damage(h5_filename, plot_timesteps, opt):
                 mode="cube",
                 reset_zoom=False,
                 resolution=5,
+                vmin=opt.min_legend,
+                vmax=opt.max_legend,
             )
             # fmt: on
 
