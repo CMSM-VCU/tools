@@ -4,10 +4,10 @@ channels:
     - conda-forge
     - defaults
 dependencies:
-    - python=3.9
+    - python=3.7
+    - mayavi=4.7.1
     - numpy
     - h5py
-    - mayavi
     - plotly
     - chart-studio
     - matplotlib
