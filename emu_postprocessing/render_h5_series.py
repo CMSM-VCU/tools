@@ -8,13 +8,9 @@ from gooey import Gooey, GooeyParser
 from mayavi import mlab
 
 
-def set_general_plot_parameters(plot, view, grid_spacing):
+def set_general_plot_parameters(view):
     """
     """
-    plot.glyph.glyph_source.glyph_source.x_length = grid_spacing
-    plot.glyph.glyph_source.glyph_source.y_length = grid_spacing
-    plot.glyph.glyph_source.glyph_source.z_length = grid_spacing
-
     # Isometric, perspective
     if view == "iso":
         mlab.view(azimuth=-135, elevation=65)
@@ -227,7 +223,7 @@ def scatter_visualize_damage(h5_filename, plot_timesteps, opt):
             # fmt: off
             plot = mlab.points3d(
                 x, y, z, output,
-                scale_factor=1.0,
+                scale_factor=opt.grid_spacing,
                 scale_mode="none",
                 mode="cube",
                 reset_zoom=False,
@@ -238,7 +234,7 @@ def scatter_visualize_damage(h5_filename, plot_timesteps, opt):
             # fmt: on
             if opt.scalebar:
                 mlab.scalarbar()
-            set_general_plot_parameters(plot, opt.view, opt.grid_spacing)
+            set_general_plot_parameters(opt.view)
             # plot.scene.show_axes = True
             mlab.savefig(image_filename)
             mlab.close()
@@ -250,7 +246,7 @@ def scatter_visualize_damage(h5_filename, plot_timesteps, opt):
             # fmt: off
             plot = mlab.points3d(
                 x, y, z, output,
-                scale_factor=1.0,
+                scale_factor=opt.grid_spacing,
                 scale_mode="none",
                 mode="cube",
                 reset_zoom=False,
@@ -260,7 +256,7 @@ def scatter_visualize_damage(h5_filename, plot_timesteps, opt):
             )
             # fmt: on
 
-            set_general_plot_parameters(plot, opt.view, opt.grid_spacing)
+            set_general_plot_parameters(opt.view)
             # plot.scene.show_axes = True
             if opt.scalebar:
                 mlab.scalarbar()
