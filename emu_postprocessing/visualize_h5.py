@@ -48,6 +48,7 @@ PARSER_DICT = {
     "greyscale":    ["-g", "--greyscale",    "greyscale",    None,   "store_true", None,   "Whether colorscale is greyscale (`Greys`), instead of blue-red"],
     "view":         ["-v", "--view",         "view",         str,    "store",      None,    "[unusable] View angle, one of (x+, x-, y+, y-, z+, z-, iso)"],
     "scalebar":     ["-b", "--scalebar",     "scalebar",     None,   "store_false",None,    "Whether to enable the scalebar (scalebar enabled by default)"],
+    "list":         ["-p", "--print",        "print",        None,   "store_true", None,    "Print information about the data available in the specified file and exit."]
 }
 
 OUTPUT_DICT = {
@@ -347,6 +348,12 @@ def plot_data(datapoints, plot_options, viewpoint, window, image_filename="image
         mlab.close()
 
 
+def list_h5_data(h5: pd.DataFrame) -> None:
+    print(f"Max node number: {h5.index.max()[1]}")
+    print(f"Available time steps: \n\t{list(h5.index.levels[0])}")
+    print(f"Available data fields: \n\t{list(h5.columns)}")
+
+
 #########################################################################################
 #                                      EXECUTION                                        #
 #########################################################################################
@@ -358,9 +365,9 @@ h5_filename = options["filename"]
 # Read data from h5 file
 data = open_h5(h5_filename)
 
-# Select target time step
-timesteps = list(data["Time_Steps"][:].tolist())
-timestep_index = timesteps.index(options["timestep_output"])
+if options["print"]:
+    list_h5_data(data)
+    exit(0)
 
 # Extract desired datasets
 coords = data.loc[options["timestep_output"], ("x1", "x2", "x3")]
