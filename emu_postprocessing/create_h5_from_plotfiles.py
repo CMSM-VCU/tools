@@ -219,99 +219,100 @@ def check_if_empty(file):
 #########################################################################################
 #                                      EXECUTION                                        #
 #########################################################################################
-if len(sys.argv) < 2:
-    filename_base, timesteps = parse_file_list()
-else:
-    filename_base, timesteps = parse_file_list(Path(sys.argv[1]))
-
-
-output_data = {}
-
-num_nodes = []
-num_fields = None
-
-# Extract raw data and store in output_data dictionary
-for i, ts in enumerate(timesteps):
-    filename = filename_base + "." + str(ts) + ".*"
-    file_list = glob.glob(filename)
-
-    not_empty = []
-    for file in file_list:
-        if not check_if_empty(file):
-            not_empty.append(file)
-
-    if not_empty:
-        input_data = read_timestep_files(not_empty)
-        print(ts, ": ", input_data.shape, len(input_data.dtype.names))
-        num_nodes.append(input_data.shape[0])
-
-        if not num_fields:
-            num_fields = len(input_data.dtype.names)
-
-        if input_data.shape[0] < max(num_nodes):
-            print(input_data.shape[0], "<", max(num_nodes), "padding...")
-            input_data.resize(max(num_nodes))
-
-        if i == 0:  # Initialize dictionary entries
-            for name in input_data.dtype.names:
-                output_data.update({name: input_data[name]})
-        else:  # Append subsequent timesteps to existing dictionary entries
-            for name in input_data.dtype.names:
-                output_data[name] = np.dstack((output_data[name], input_data[name]))
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        filename_base, timesteps = parse_file_list()
     else:
-        print("Warning: Timestep", ts, "contains no data.")
+        filename_base, timesteps = parse_file_list(Path(sys.argv[1]))
 
-# Reorder dimensions in output_data arrays and remove extra dimensions
-for name in output_data:
-    output_data[name] = np.squeeze(np.transpose(output_data[name], (2, 1, 0)))
 
-# Process vector quantities
-for name in VECTORS:
-    output_data.update({name: convert_columns_to_vector(name, output_data)})
+    output_data = {}
 
-# Process matrix quantities
-for name in MATRICES:
-    output_data.update({name: convert_columns_to_matrix(name, output_data)})
+    num_nodes = []
+    num_fields = None
 
-# Process special quantities
-for name, columns in SPECIAL.items():
-    output_data.update({name: convert_columns_to_special(columns, output_data)})
+    # Extract raw data and store in output_data dictionary
+    for i, ts in enumerate(timesteps):
+        filename = filename_base + "." + str(ts) + ".*"
+        file_list = glob.glob(filename)
 
-# Remove excluded data
-for key in EXCLUDE:
-    output_data.pop(key, None)
+        not_empty = []
+        for file in file_list:
+            if not check_if_empty(file):
+                not_empty.append(file)
 
-# Remove data fields not found in plot files
-for key in list(output_data):
-    if output_data[key] is None:
+        if not_empty:
+            input_data = read_timestep_files(not_empty)
+            print(ts, ": ", input_data.shape, len(input_data.dtype.names))
+            num_nodes.append(input_data.shape[0])
+
+            if not num_fields:
+                num_fields = len(input_data.dtype.names)
+
+            if input_data.shape[0] < max(num_nodes):
+                print(input_data.shape[0], "<", max(num_nodes), "padding...")
+                input_data.resize(max(num_nodes))
+
+            if i == 0:  # Initialize dictionary entries
+                for name in input_data.dtype.names:
+                    output_data.update({name: input_data[name]})
+            else:  # Append subsequent timesteps to existing dictionary entries
+                for name in input_data.dtype.names:
+                    output_data[name] = np.dstack((output_data[name], input_data[name]))
+        else:
+            print("Warning: Timestep", ts, "contains no data.")
+
+    # Reorder dimensions in output_data arrays and remove extra dimensions
+    for name in output_data:
+        output_data[name] = np.squeeze(np.transpose(output_data[name], (2, 1, 0)))
+
+    # Process vector quantities
+    for name in VECTORS:
+        output_data.update({name: convert_columns_to_vector(name, output_data)})
+
+    # Process matrix quantities
+    for name in MATRICES:
+        output_data.update({name: convert_columns_to_matrix(name, output_data)})
+
+    # Process special quantities
+    for name, columns in SPECIAL.items():
+        output_data.update({name: convert_columns_to_special(columns, output_data)})
+
+    # Remove excluded data
+    for key in EXCLUDE:
         output_data.pop(key, None)
 
-# Add numbers of nodes
-output_data.update({"num_nodes": np.asarray(num_nodes)})
+    # Remove data fields not found in plot files
+    for key in list(output_data):
+        if output_data[key] is None:
+            output_data.pop(key, None)
 
-# Remove extra dimension from time and timestep fields
-# Dimensions from [timesteps x nodes] to [timesteps]
-output_data["timex"] = output_data["timex"][:, 0]
-output_data["iter"] = output_data["iter"][:, 0]
+    # Add numbers of nodes
+    output_data.update({"num_nodes": np.asarray(num_nodes)})
 
-# Open h5 file
-hf = h5py.File("simulation.h5", "w")
+    # Remove extra dimension from time and timestep fields
+    # Dimensions from [timesteps x nodes] to [timesteps]
+    output_data["timex"] = output_data["timex"][:, 0]
+    output_data["iter"] = output_data["iter"][:, 0]
 
-# Save output_data to h5 file
-for name in output_data:
-    print(output_data[name].shape)
-    hf.create_dataset(
-        name=H5_LABELS.get(name, name),
-        data=output_data[name],
-        compression="gzip",
-        compression_opts=9,
+    # Open h5 file
+    hf = h5py.File("simulation.h5", "w")
+
+    # Save output_data to h5 file
+    for name in output_data:
+        print(output_data[name].shape)
+        hf.create_dataset(
+            name=H5_LABELS.get(name, name),
+            data=output_data[name],
+            compression="gzip",
+            compression_opts=9,
+        )
+
+    hf.close()
+    print(
+        "Saved",
+        output_data["mypr"].shape[1],
+        "nodes across",
+        output_data["mypr"].shape[0],
+        "timesteps to simulation.h5",
     )
-
-hf.close()
-print(
-    "Saved",
-    output_data["mypr"].shape[1],
-    "nodes across",
-    output_data["mypr"].shape[0],
-    "timesteps to simulation.h5",
-)
