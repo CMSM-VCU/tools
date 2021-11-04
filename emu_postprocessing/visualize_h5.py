@@ -18,12 +18,11 @@ Requires:
     os
     sys
 """
-import os
 from argparse import ArgumentParser
+from pathlib import Path
 
-import h5py
-import mayavi
 import numpy as np
+import pandas as pd
 from gooey import Gooey, GooeyParser
 from mayavi import mlab
 
@@ -49,36 +48,7 @@ PARSER_DICT = {
     "greyscale":    ["-g", "--greyscale",    "greyscale",    None,   "store_true", None,   "Whether colorscale is greyscale (`Greys`), instead of blue-red"],
     "view":         ["-v", "--view",         "view",         str,    "store",      None,    "[unusable] View angle, one of (x+, x-, y+, y-, z+, z-, iso)"],
     "scalebar":     ["-b", "--scalebar",     "scalebar",     None,   "store_false",None,    "Whether to enable the scalebar (scalebar enabled by default)"],
-}
-
-OUTPUT_DICT = {
-  # Label         Output name        Extraction function
-    "xloc":     ["X Coordinate",     lambda hf, t: hf["Coordinates"][t,:,0] ],
-    "yloc":     ["Y Coordinate",     lambda hf, t: hf["Coordinates"][t,:,1] ],
-    "zloc":     ["Z Coordinate",     lambda hf, t: hf["Coordinates"][t,:,2] ],
-    "ux":       ["Displacement X",   lambda hf, t: hf["Disp"][t,:,0]     ],
-    "uy":       ["Displacement Y",   lambda hf, t: hf["Disp"][t,:,1]     ],
-    "uz":       ["Displacement Z",   lambda hf, t: hf["Disp"][t,:,2]     ],
-    "vx":       ["Velocity X",       lambda hf, t: hf["Vel"][t,:,0]      ],
-    "vy":       ["Velocity Y",       lambda hf, t: hf["Vel"][t,:,1]      ],
-    "vz":       ["Velocity Z",       lambda hf, t: hf["Vel"][t,:,2]      ],
-    "dmg":      ["DMG Total",        lambda hf, t: hf["DMG"][t,:]      ],
-    # "dmg":      ["DMG Total",        lambda hf, t: hf["DMG"][t,:,0]      ],
-    "dmg_self": ["DMG Self",         lambda hf, t: hf["DMG"][t,:,1]      ],
-    "dmg_int":  ["DMG Interface",    lambda hf, t: hf["DMG"][t,:,2]      ],
-    "crit_str": ["Critical Stretch", lambda hf, t: hf["Ecrit"][t,:]      ],
-    "str_max":  ["Stretch Max",      lambda hf, t: hf["Stnode"][t,:]  ],
-    # "str_max":  ["Stretch Max",      lambda hf, t: hf["Stretch"][t,:,0]  ],
-    "str_min":  ["Stretch Min",      lambda hf, t: hf["Stretch"][t,:,1]  ],
-    "nofail":   ["No fail value",    lambda hf, t: hf["Nofail"][t,:]     ],
-    "bdry":     ["Boundary region",  lambda hf, t: hf["Nodbd"][t,:,0] ],
-    "bdry1":     ["Boundary region",  lambda hf, t: hf["Nodbd"][t,:,1] ],
-    "bdry2":     ["Boundary region",  lambda hf, t: hf["Nodbd"][t,:,2] ],
-    # "bdry":     ["Boundary region",  lambda hf, t: hf["Boundary"][t,:,0] ],
-    "yldfr":    ["Yield Fraction",   lambda hf, t: hf["YldFr"][t,:]      ],
-    "mat":      ["Material",         lambda hf, t: hf["Material"][t,:]   ],
-    "proc":     ["Processor",        lambda hf, t: hf["Processor"][t,:]  ],
-    "cell":     ["Cell",             lambda hf, t: hf["Cell"][t,:]       ]
+    "list":         ["-p", "--print",        "print",        None,   "store_true", None,    "Print information about the data available in the specified file and exit."]
 }
 # fmt: on
 
@@ -117,9 +87,7 @@ WINDOW = {  # Window properties
 #########################################################################################
 #                                      FUNCTIONS                                        #
 #########################################################################################
-@Gooey(
-    use_cmd_args=True, show_success_modal=False, return_to_config=True, header_height=20
-)
+@Gooey(use_cmd_args=True, show_success_modal=False, header_height=20)
 def parse_options(parser_dict):
     """Define and parse command line options according to dictionary containing option
     data.
@@ -174,6 +142,8 @@ def options_convert_extents(options):
     """
     if options["extents"]:
         options["extents"] = eval(options["extents"])
+    else:
+        options["extents"] = [-np.inf, np.inf, -np.inf, np.inf, -np.inf, np.inf]
 
     return options
 
@@ -187,146 +157,7 @@ def open_h5(filename):
     Returns:
         (h5py File): h5 data structure with fields accessible [by dot notation] TODO
     """
-    return h5py.File(filename, "r")
-
-
-def select_output(hf, selection, timestep_index, output_dict):
-    """Extract selected output quantity from h5 file.
-    output_dict is used to associate selection label with full output name and lambda
-    function that will return the associated data from the h5 structure.
-
-    Args:
-        hf (hdf5 file structure): h5 file opened to root directory
-        selection (str): label (key) of selected output quantity
-        timestep_index (int): index of timestep to be viewed
-        output_dict (dict): dictionary with values containing the field name and a
-                            lambda function to extract that field from the h5
-
-    Returns:
-        output (float/int nx1): list containing selected output data
-    """
-    print("Output=", output_dict[selection][0])
-    return np.array(output_dict[selection][1](hf, timestep_index))
-
-
-def get_dataset(name, data, timestep_index):
-    """Extract dataset from h5 file and return as np array. Returns None if dataset not
-    found in h5 file.
-
-    Args:
-        name (str): name of dataset in h5 file
-        data (h5py File): h5 data structure
-        timestep_index (int): index of timestep to be extracted from h5; if None, returns
-                              all timesteps
-
-    Returns:
-        (array): dataset, type and dimensions dependent on case
-    """
-    if name in data:
-        if timestep_index is not None:
-            return np.array(data[name][timestep_index])
-        else:
-            return np.array(data[name])
-    else:
-        print("get_dataset: dataset not found in h5 datasets:", name)
-        return None
-
-
-def apply_displacements(coords, disp, exag=0.0):
-    """Apply displacements to coordinates according to exaggeration.
-
-    Args:
-        coords (float, nx3 array): datapoint coordinates in [node, (x,y,z)] format
-        disp (float, nx3 array): datapoint displacements in [node, (x,y,z)] format
-        exag (float, optional): displacement exaggeration factor. 1.0 is true scale
-
-    Returns:
-        (float, nx3 array): datapoint coordinates after displacements
-    """
-    if exag != 0.0:
-        return coords + disp * exag
-    else:
-        return coords
-
-
-def cull_omitted_data(coords, output, data, timestep_index):
-    """Remove dropped datapoints from dataset according to the recorded actual number of
-    datapoints that is stored in the h5 file. If datapoint count is not found,
-
-    Args:
-        coords (float, nx3 array): datapoint coordinates in [node, (x,y,z)] format
-        output (float, nx1 array): datapoint values corresponding with coord
-        data (h5py File): h5 data structure to extract number of nodes
-        timestep_index (int): index of
-
-    Returns:
-        (float, mx3 array): datapoint coordinates masked by "wanted" array
-        (float, mx1 array): datapoint values masked by "wanted" array
-    """
-    num_nodes = get_dataset("Num_Nodes", data, timestep_index)
-    if num_nodes is not None:
-        if DEBUG:
-            print(
-                "DEBUG: cull_omitted_data: culling from", len(coords), "to", num_nodes
-            )
-        return coords[:num_nodes], output[:num_nodes]
-    else:
-        if DEBUG:
-            print("DEBUG: cull_omitted_data: Num_Nodes dataset not found")
-        return coords, output
-
-
-def cull_data_by_location(coords, output, extents=None):
-    """Trim datapoints according to specified spacial extents.
-    If no extents are provided, do nothing and return inputs.
-
-    Args:
-        coords (float, nx3 array): datapoint coordinates in [node, (x,y,z)] format
-        output (float, nx1 array): datapoint values corresponding with coord
-        extents (float, 6x1 list, optional): spacial limits in [-x, +x, -y, +y, -z, +z]
-                                             order
-
-    Returns:
-        (float, mx3 array): datapoint coordinates masked by "wanted" array
-        (float, mx1 array): datapoint values masked by "wanted" array
-    """
-    if extents is not None:
-        wanted = (
-            (coords[:, 0] > extents[0])
-            & (coords[:, 0] < extents[1])
-            & (coords[:, 1] > extents[2])
-            & (coords[:, 1] < extents[3])
-            & (coords[:, 2] > extents[4])
-            & (coords[:, 2] < extents[5])
-        )
-
-        return coords[wanted, :], output[wanted]
-    else:
-        return coords, output
-
-
-def cull_data_by_value(coords, output, limits=None):
-    """Trim datapoints according to specified value limits.
-    If no limits are provided, do nothing and return inputs.
-
-    Args:
-        coords (float, nx3 array): datapoint coordinates in [node, (x,y,z)] format
-        output (float, nx1 array): datapoint values corresponding with coord
-        limits (float, 2x1 list, optional): value limits in [min, max] order
-
-    Returns:
-        (float, mx3 array): datapoint coordinates masked by "wanted" array
-        (float, mx1 array): datapoint values masked by "wanted" array
-    """
-    if limits is not None:
-        wanted = (output >= limits[0]) & (output <= limits[1])
-
-        print(
-            f"Cull by value: {np.count_nonzero(wanted)}/{len(output)} points remaining."
-        )
-        return coords[wanted, :], output[wanted]
-    else:
-        return coords, output
+    return pd.read_hdf(filename, key="data", mode="r")
 
 
 def set_limits(output, plot_limits=[None, None], legend_limits=[None, None]):
@@ -399,24 +230,18 @@ def set_image_filename(h5_filename, timestep_output, selection, exag):
     Returns:
         image_filename (str): name of image to be saved
     """
-    filebase, _ = os.path.splitext(h5_filename)
-    primer_path = filebase.rsplit("\\", 1)[0]
-    case_name = filebase.rsplit("\\", 1)[1]
+    h5path = Path(h5_filename)
 
-    folder_name = primer_path + "\\" + selection + "_" + str(exag) + "\\"
+    primer_path = h5path.parent
+    case_name = h5path.stem
 
-    # If the folder does not exist then create the directory
-    if not os.path.exists(folder_name):
-        os.makedirs(folder_name)
+    folder_name = primer_path / f"{selection}_{exag}"
+    folder_name.mkdir(exist_ok=True)
 
-    image_filename = (
-        folder_name + case_name + "_" + "%06d" % int(timestep_output) + ".png"
-    )
-
-    return image_filename
+    return folder_name / f"{case_name}_{timestep_output:06d}.png"
 
 
-def plot_data(datapoints, viewpoint, window, image_filename="image.png"):
+def plot_data(datapoints, plot_options, viewpoint, window, image_filename="image.png"):
     """Plot the processed data.
     Given the data in "datapoints", plot it in the window defined by the properties in
     "window", viewing the data as defined in "viewpoint". If specified, save the plot
@@ -441,13 +266,13 @@ def plot_data(datapoints, viewpoint, window, image_filename="image.png"):
     ]  # Set parallel projection state
 
     high = mlab.points3d(
-        datapoints["x"],
-        datapoints["y"],
-        datapoints["z"],
-        datapoints["value"],
-        scale_factor=datapoints["scale"],
-        vmin=datapoints["legend_limits"][0],
-        vmax=datapoints["legend_limits"][1],
+        datapoints["x1"] + datapoints["u1"] * plot_options["exag"],
+        datapoints["x2"] + datapoints["u2"] * plot_options["exag"],
+        datapoints["x3"] + datapoints["u3"] * plot_options["exag"],
+        datapoints[plot_options["data_name"]],
+        scale_factor=plot_options["scale"],
+        vmin=plot_options["legend_limits"][0],
+        vmax=plot_options["legend_limits"][1],
         scale_mode="none",
         mode="cube",
         reset_zoom=False,
@@ -486,6 +311,12 @@ def plot_data(datapoints, viewpoint, window, image_filename="image.png"):
         mlab.close()
 
 
+def list_h5_data(h5: pd.DataFrame) -> None:
+    print(f"Max node number: {h5.index.max()[1]}")
+    print(f"Available time steps: \n\t{list(h5.index.levels[0])}")
+    print(f"Available data fields: \n\t{list(h5.columns)}")
+
+
 #########################################################################################
 #                                      EXECUTION                                        #
 #########################################################################################
@@ -497,25 +328,24 @@ h5_filename = options["filename"]
 # Read data from h5 file
 data = open_h5(h5_filename)
 
-# Select target time step
-timesteps = list(data["Time_Steps"][:].tolist())
-timestep_index = timesteps.index(options["timestep_output"])
+if options["print"]:
+    list_h5_data(data)
+    exit(0)
 
 # Extract desired datasets
-# coords = np.array(data['Coordinates'][timestep_index, :, :])
-coords = get_dataset("Coordinates", data, timestep_index)
-output = select_output(data, options["selection"], timestep_index, OUTPUT_DICT)
+coords = data.loc[options["timestep_output"], ("x1", "x2", "x3")]
+disp = data.loc[options["timestep_output"], ("u1", "u2", "u3")]
+output = data.loc[options["timestep_output"], options["selection"]]
 
-# Apply displacements
-coords = apply_displacements(
-    coords, get_dataset("Disp", data, timestep_index), options["exag"]
+extents = options["extents"]
+extent_mask = (
+    (coords["x1"] >= extents[0])
+    & (coords["x1"] <= extents[1])
+    & (coords["x2"] >= extents[2])
+    & (coords["x2"] <= extents[3])
+    & (coords["x3"] >= extents[4])
+    & (coords["x3"] <= extents[5])
 )
-
-# Cull omitted data (if available)
-coords, output = cull_omitted_data(coords, output, data, timestep_index)
-
-# Cull data by location and value
-coords, output = cull_data_by_location(coords, output, options["extents"])
 
 plot_limits, legend_limits = set_limits(
     output,
@@ -523,16 +353,17 @@ plot_limits, legend_limits = set_limits(
     [options["min_legend"], options["max_legend"]],
 )
 
-coords, output = cull_data_by_value(coords, output, plot_limits)
+value_mask = (output >= plot_limits[0]) & (output <= plot_limits[1])
+
+datapoints = pd.concat([coords, disp, output], axis=1)
+datapoints = datapoints[extent_mask & value_mask]
 
 # Organize data
-datapoints = {
-    "x": coords[:, 0],
-    "y": coords[:, 1],
-    "z": coords[:, 2],
-    "value": output,
+plot_options = {
     "scale": options["gs"],
     "legend_limits": legend_limits,
+    "exag": options["exag"],
+    "data_name": options["selection"],
 }
 
 # Set plot options
@@ -545,4 +376,4 @@ else:
     image_filename = None
 
 # Plot data
-plot_data(datapoints, viewpoint, window, image_filename)
+plot_data(datapoints, plot_options, viewpoint, window, image_filename)

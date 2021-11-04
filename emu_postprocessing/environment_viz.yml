@@ -12,3 +12,5 @@ dependencies:
     - chart-studio
     - matplotlib
     - gooey
+    - pandas
+    - pytables

@@ -6,6 +6,7 @@ import h5py
 import numpy as np
 from gooey import Gooey, GooeyParser
 from mayavi import mlab
+import pandas as pd
 
 
 def set_general_plot_parameters(view):
@@ -69,13 +70,14 @@ def parse_options():
     parser.add_argument("-a",                 dest="write_all_timesteps", action="store_true")
     parser.add_argument("-v","--view",        dest="view",        type=str)
     parser.add_argument("-b","--scalebar",    dest="scalebar",    action="store_false")
+    parser.add_argument("-p","--print",       dest="print",       action="store_true", help="Print information about the data available in the specified file and exit.")
     # fmt: on
 
     args = parser.parse_args()
     return args
 
 
-def select_output(hf, selection, timestep_index):
+def select_output(hf, selection, timestep):
     """ Extract selected output quantity from h5 file.
     output_dict is used to associate selection label with full output name and lambda
     function that will return the associated data from the h5 structure.
@@ -88,44 +90,24 @@ def select_output(hf, selection, timestep_index):
     Returns:
         output (float/int nx1): list containing selected output data
     """
-    output_dict = {
-        # fmt: off
-        # Label         Output name        Extraction function
-        'xloc':       ['X Coordinate',     lambda hf, t: hf['Coordinates'][t,:,0] ],
-        'yloc':       ['Y Coordinate',     lambda hf, t: hf['Coordinates'][t,:,1] ],
-        'zloc':       ['Z Coordinate',     lambda hf, t: hf['Coordinates'][t,:,2] ],
-        "ux":         ["Displacement X",   lambda hf, t: hf['Disp'][t, :, 0]    ],
-        "uy":         ["Displacement Y",   lambda hf, t: hf['Disp'][t, :, 1]    ],
-        "uz":         ["Displacement Z",   lambda hf, t: hf['Disp'][t, :, 2]    ],
-        "vx":         ["Velocity X",       lambda hf, t: hf['Vel'][t, :, 0]     ],
-        "vy":         ["Velocity Y",       lambda hf, t: hf['Vel'][t, :, 1]     ],
-        "vz":         ["Velocity Z",       lambda hf, t: hf['Vel'][t, :, 2]     ],
-        "dmg":        ["DMG Total",        lambda hf, t: hf['DMG'][t, :]        ],
-        "crit_str":   ["Critical Stretch", lambda hf, t: hf['Ecrit'][t, :]      ],
-        "stretch_max":["Stretch Max",      lambda hf, t: hf['Stretch'][t, :, 0] ],
-        "stretch_min":["Stretch Min",      lambda hf, t: hf['Stretch'][t, :, 1] ],
-        "stretch_avg":["Stretch Avg",      lambda hf, t: hf['Stretch'][t, :, 2] ],
-        "bdry":       ["Boundary region",  lambda hf, t: hf['Nodbd'][t, :, 0]   ],
-        "yldfr":      ["Yield Fraction",   lambda hf, t: hf['Yldfr'][t, :]      ],
-        "material":   ["Material",         lambda hf, t: hf['Anodty'][t, :]     ],
-        'proc':       ['Processor',        lambda hf, t: hf['Processor'][t, :]  ],
-        'cell':       ['Cell',             lambda hf, t: hf['Cell'][t, :]       ]
-        # fmt: on
-    }
+    return np.array(hf.loc[timestep, selection])
 
-    print("Output=", output_dict[selection][0])
 
-    # Parentheses at end executes the lambda function from the dictionary
-    return output_dict[selection][1](hf, timestep_index)
+def list_h5_data(h5: pd.DataFrame) -> None:
+    print(f"Max node number: {h5.index.max()[1]}")
+    print(f"Available time steps: \n\t{list(h5.index.levels[0])}")
+    print(f"Available data fields: \n\t{list(h5.columns)}")
 
 
 def scatter_visualize_damage(h5_filename, plot_timesteps, opt):
     # Open and read the h5 file
-    hf = h5py.File(h5_filename, "r")
+    hf = pd.read_hdf(h5_filename, key="data", mode="r")
+    list_h5_data(hf)
+    if opt.print:
+        return
 
     # get timesteps
-    time_steps = hf["Time_Steps"][:]
-    t_print = time_steps
+    time_steps = hf.index.levels[0]
 
     # write to screen all variabl
     print()
@@ -133,7 +115,6 @@ def scatter_visualize_damage(h5_filename, plot_timesteps, opt):
     print("    Exag= %s" % opt.exag)
     print("    Min_plot= %s" % opt.min_plot, "Max_plot= %s" % opt.max_plot)
     print("    Min_Color= %s" % opt.min_legend, "Max_Color= %s" % opt.max_legend)
-    print("Time Steps Available= %s" % t_print)
     print("Plotting timesteps:", plot_timesteps)
     # find the timestep_index for slicing
     if plot_timesteps == "all":
@@ -153,7 +134,7 @@ def scatter_visualize_damage(h5_filename, plot_timesteps, opt):
             timestep_index = time_steps.index(timestep)
 
         ##check desired output
-        output = select_output(hf, opt.show, timestep_index)
+        output = select_output(hf, opt.show, timestep)
 
         print("Reading timestep= %s" % timestep, "Timestep index= %s" % timestep_index)
         print(
@@ -164,23 +145,14 @@ def scatter_visualize_damage(h5_filename, plot_timesteps, opt):
         )
 
         # Obtain hdf5 data set
-        c1 = hf["Coordinates"][timestep_index, :, :]
+        c1 = np.array(hf.loc[timestep, ("x1", "x2", "x3")])
 
-        u = hf["Disp"][timestep_index, :, :]
+        u = np.array(hf.loc[timestep, ("u1", "u2", "u3")])
 
         # set the coordinate locations
         x = c1[:, 0]
         y = c1[:, 1]
         z = c1[:, 2]
-
-        if hf.__contains__("Num_nodes"):
-            num_nodes = hf["Num_nodes"][timestep_index]
-            print("Number of live nodes: ", num_nodes, "/", len(x))
-            x = x[:num_nodes]
-            y = y[:num_nodes]
-            z = z[:num_nodes]
-            u = u[:num_nodes]
-            output = output[:num_nodes]
 
         # apply the exaggeration
         x = x + u[:, 0] * opt.exag
