@@ -50,36 +50,6 @@ PARSER_DICT = {
     "scalebar":     ["-b", "--scalebar",     "scalebar",     None,   "store_false",None,    "Whether to enable the scalebar (scalebar enabled by default)"],
     "list":         ["-p", "--print",        "print",        None,   "store_true", None,    "Print information about the data available in the specified file and exit."]
 }
-
-OUTPUT_DICT = {
-  # Label         Output name        Extraction function
-    "xloc":     ["X Coordinate",     lambda hf, t: hf["Coordinates"][t,:,0] ],
-    "yloc":     ["Y Coordinate",     lambda hf, t: hf["Coordinates"][t,:,1] ],
-    "zloc":     ["Z Coordinate",     lambda hf, t: hf["Coordinates"][t,:,2] ],
-    "ux":       ["Displacement X",   lambda hf, t: hf["Disp"][t,:,0]     ],
-    "uy":       ["Displacement Y",   lambda hf, t: hf["Disp"][t,:,1]     ],
-    "uz":       ["Displacement Z",   lambda hf, t: hf["Disp"][t,:,2]     ],
-    "vx":       ["Velocity X",       lambda hf, t: hf["Vel"][t,:,0]      ],
-    "vy":       ["Velocity Y",       lambda hf, t: hf["Vel"][t,:,1]      ],
-    "vz":       ["Velocity Z",       lambda hf, t: hf["Vel"][t,:,2]      ],
-    "dmg":      ["DMG Total",        lambda hf, t: hf["DMG"][t,:]      ],
-    # "dmg":      ["DMG Total",        lambda hf, t: hf["DMG"][t,:,0]      ],
-    "dmg_self": ["DMG Self",         lambda hf, t: hf["DMG"][t,:,1]      ],
-    "dmg_int":  ["DMG Interface",    lambda hf, t: hf["DMG"][t,:,2]      ],
-    "crit_str": ["Critical Stretch", lambda hf, t: hf["Ecrit"][t,:]      ],
-    "str_max":  ["Stretch Max",      lambda hf, t: hf["Stnode"][t,:]  ],
-    # "str_max":  ["Stretch Max",      lambda hf, t: hf["Stretch"][t,:,0]  ],
-    "str_min":  ["Stretch Min",      lambda hf, t: hf["Stretch"][t,:,1]  ],
-    "nofail":   ["No fail value",    lambda hf, t: hf["Nofail"][t,:]     ],
-    "bdry":     ["Boundary region",  lambda hf, t: hf["Nodbd"][t,:,0] ],
-    "bdry1":     ["Boundary region",  lambda hf, t: hf["Nodbd"][t,:,1] ],
-    "bdry2":     ["Boundary region",  lambda hf, t: hf["Nodbd"][t,:,2] ],
-    # "bdry":     ["Boundary region",  lambda hf, t: hf["Boundary"][t,:,0] ],
-    "yldfr":    ["Yield Fraction",   lambda hf, t: hf["YldFr"][t,:]      ],
-    "mat":      ["Material",         lambda hf, t: hf["Material"][t,:]   ],
-    "proc":     ["Processor",        lambda hf, t: hf["Processor"][t,:]  ],
-    "cell":     ["Cell",             lambda hf, t: hf["Cell"][t,:]       ]
-}
 # fmt: on
 
 # VIEWS_DICT = {
