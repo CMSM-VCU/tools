@@ -18,8 +18,8 @@ Requires:
     os
     sys
 """
-import os
 from argparse import ArgumentParser
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -117,9 +117,7 @@ WINDOW = {  # Window properties
 #########################################################################################
 #                                      FUNCTIONS                                        #
 #########################################################################################
-@Gooey(
-    use_cmd_args=True, show_success_modal=False, return_to_config=True, header_height=20
-)
+@Gooey(use_cmd_args=True, show_success_modal=False, header_height=20)
 def parse_options(parser_dict):
     """Define and parse command line options according to dictionary containing option
     data.
@@ -262,21 +260,16 @@ def set_image_filename(h5_filename, timestep_output, selection, exag):
     Returns:
         image_filename (str): name of image to be saved
     """
-    filebase, _ = os.path.splitext(h5_filename)
-    primer_path = filebase.rsplit("\\", 1)[0]
-    case_name = filebase.rsplit("\\", 1)[1]
+    h5path = Path(h5_filename)
 
-    folder_name = primer_path + "\\" + selection + "_" + str(exag) + "\\"
+    primer_path = h5path.parent
+    case_name = h5path.stem
 
-    # If the folder does not exist then create the directory
-    if not os.path.exists(folder_name):
-        os.makedirs(folder_name)
+    folder_name = primer_path / f"{selection}_{exag}"
+    folder_name.mkdir(exist_ok=True)
 
-    image_filename = (
-        folder_name + case_name + "_" + "%06d" % int(timestep_output) + ".png"
-    )
+    return folder_name / f"{case_name}_{timestep_output:06d}.png"
 
-    return image_filename
 
 def plot_data(datapoints, plot_options, viewpoint, window, image_filename="image.png"):
     """Plot the processed data.
