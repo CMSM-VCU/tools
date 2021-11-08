@@ -173,7 +173,7 @@ class Grid:
     def create_cuboid(vector):
         x,y,z = np.mgrid[0:vector[0], 0:vector[1], 0:vector[2]]
         coords = np.vstack((x.flatten(), y.flatten(), z.flatten())).T
-        return grid.Grid(coords=coords, mats=np.ones_like(coords[:,0]))
+        return Grid(coords=coords, mats=np.ones_like(coords[:,0]))
         
 
     def copy(self):
