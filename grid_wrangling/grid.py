@@ -169,6 +169,12 @@ class Grid:
         self.center_grid_bb()
         self.scale(1 / np.amax(self.extents()))
 
+    @staticmethod
+    def create_cuboid(vector, material=1):
+        x,y,z = np.mgrid[0:vector[0], 0:vector[1], 0:vector[2]]
+        coords = np.vstack((x.flatten(), y.flatten(), z.flatten())).T
+        return Grid(coords=coords, mats=np.ones_like(coords[:,0])*material)
+
     def copy(self):
         return Grid(coords = np.copy(self.coords), mats = np.copy(self.mats))
 
