@@ -176,7 +176,18 @@ class Grid:
         return Grid(coords=coords, mats=np.ones_like(coords[:,0])*material)
 
     def copy(self):
-        return Grid(coords = np.copy(self.coords), mats = np.copy(self.mats))
+        return Grid(coords = np.copy(self.coords.astype(np.float64)), mats = np.copy(self.mats))
+
+    def jitter_visualize(self, jitter_factor=0.2, rand_color=False):
+        temp = self.copy()
+        temp.coords += np.random.random(temp.coords.shape) * temp.grid_spacing()[1] * 0.2
+        if rand_color:
+            print(temp.mats)
+            temp.mats = np.random.randint(1, temp.coords.shape[0], temp.mats.shape)
+            print(temp.mats)
+        temp.visualize()
+
+
 
     def visualize(self):
         """Visualizes the array with pyvista
