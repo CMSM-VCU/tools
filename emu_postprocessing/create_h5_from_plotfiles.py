@@ -16,7 +16,7 @@ def discard_empty_files(filenames):
         with open(filename, mode="r") as f:
             f.readline()  # Dump header line
             if not f.readline():
-                not_empty_filenames.remove(i)
+                not_empty_filenames.pop(i)
 
     return not_empty_filenames
 
