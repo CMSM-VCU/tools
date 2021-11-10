@@ -10,6 +10,17 @@ import h5py
 import pandas as pd
 
 
+def discard_empty_files(filenames):
+    not_empty_filenames = list(filenames)
+    for i, filename in reversed(list(enumerate(filenames))):
+        with open(filename, mode="r") as f:
+            f.readline()  # Dump header line
+            if not f.readline():
+                not_empty_filenames.remove(i)
+
+    return not_empty_filenames
+
+
 def load_plot_files(filenames):
     for filename in filenames:
         yield pd.read_csv(
@@ -20,9 +31,11 @@ def load_plot_files(filenames):
 def main(search_path, filename_base):
     target_file = search_path / "simulation.h5"
 
-    plotfiles = search_path.glob(f"{filename_base}.*.*")
+    plotfiles = list(search_path.glob(f"{filename_base}.*.*"))
 
-    data = pd.concat(load_plot_files(plotfiles))
+    not_empty_plotfiles = discard_empty_files(plotfiles)
+
+    data = pd.concat(load_plot_files(not_empty_plotfiles))
     data = data.dropna(how="all", axis="columns")  # Drop column made by trailing commas
 
     data.to_hdf(target_file, "data", "w", complevel=9, format="table")
