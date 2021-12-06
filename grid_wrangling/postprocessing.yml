@@ -1,0 +1,12 @@
+name: h5post
+channels:
+    - conda-forge
+    - defaults
+dependencies:
+    - python=3.9
+    - pyvista
+    - pandas
+    - numpy
+    - matplotlib
+    - scipy
+    - pytables
