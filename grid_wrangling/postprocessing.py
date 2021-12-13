@@ -5,7 +5,7 @@ import os
 
 
 
-filename = r"C:/Users/watsonkh/Desktop/Yarn_Layers_Results/0PNF/case_0/case_0_0PNF.h5"
+filename = [x for x in os.listdir('.') if '.h5' in x][0]
 folder = filename[:filename.rfind("/")+1]
 
 test_image = False
@@ -13,6 +13,9 @@ exaggeration = 1.0
 
 
 image_size = (600, 1000)
+
+# dataset = "u2"
+# dataset_display_name = "Veritcal Displacement"
 
 dataset = "dmg"
 dataset_display_name = "Damage"
@@ -43,15 +46,16 @@ def render_image(hf, timestep):
     plotter.add_mesh(polydata,scalar_bar_args={'title': dataset_display_name}, cmap='plasma')
     plotter.show_axes()
 
-
+    # Camera view stuffs
     plotter.enable_parallel_projection()
     plotter.set_position(camera_position)
     plotter.set_focus(camera_look_at)
     plotter.set_viewup(camera_up)
     plotter.camera.parallel_scale = camera_scale
-
-    plotter.add_text(f"{timestep}")
     plotter.enable_anti_aliasing()
+
+    # Timestep in upper right corner
+    plotter.add_text(f"{timestep}", position='upper_left', color="white")
     
     # plotter.show()
     plotter.screenshot(f"{folder}{dataset_display_name}/{timestep}.png",
