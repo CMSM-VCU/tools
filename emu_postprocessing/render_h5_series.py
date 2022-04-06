@@ -107,7 +107,11 @@ def scatter_visualize_damage(h5_filename, plot_timesteps, opt):
         return
 
     # get timesteps
-    time_steps = hf.index.levels[0]
+    try:
+        time_steps = hf.index.levels[0]
+    except:
+        time_steps = hf.index.unique()
+
 
     # write to screen all variabl
     print()
