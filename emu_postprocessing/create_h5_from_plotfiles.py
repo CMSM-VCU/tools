@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 import h5py
-import pandas as pd
+import dask.dataframe as dd
 
 
 def discard_empty_files(filenames):
@@ -21,13 +21,6 @@ def discard_empty_files(filenames):
     return not_empty_filenames
 
 
-def load_plot_files(filenames):
-    for filename in filenames:
-        yield pd.read_csv(
-            filename, index_col=["iter", "m_global"], skipinitialspace=True
-        )
-
-
 def main(search_path, filename_base):
     target_file = search_path / "simulation.h5"
 
@@ -35,23 +28,29 @@ def main(search_path, filename_base):
 
     not_empty_plotfiles = discard_empty_files(plotfiles)
 
-    data = pd.concat(load_plot_files(not_empty_plotfiles))
-    data = data.dropna(how="all", axis="columns")  # Drop column made by trailing commas
+    print("Reading plotfiles...")
+    data = dd.read_csv(not_empty_plotfiles, skipinitialspace=True).set_index("iter")
+    print("Computing dataframe...")
+    data = data.compute()
+    data = data.dropna(how="all")  # Drop column made by trailing commas
 
+    print("Saving as hdf5...")
     data.to_hdf(target_file, "data", "w", complevel=9, format="table")
 
+    print("Adding readme...")
     with h5py.File(target_file, "a") as h5file:
         dt = h5py.special_dtype(vlen=str)
         readme = h5file.create_dataset("README", shape=(1,), dtype=dt)
         readme[0] = (
-            "The data group of this h5 file was generated using the Pandas hdf5 functionality. "
-            + "It can be decoded into a Pandas DataFrame using the pandas.read_hdf() function."
+            "The data group of this h5 file was generated using the Pandas/Dask hdf5 functionality. "
+            + "It can be decoded into a Pandas DataFrame using the "
+            + "pandas.read_hdf() or dask.dataframe.read_hdf() functions."
         )
 
     print(
         f"Plot data saved in {target_file}"
-        + f"\n\tMax node number: {data.index.max()[1]}"
-        + f"\n\tLast time step: {data.index.max()[0]}"
+        + f"\n\tMax node number: {data['m_global'].max()}"
+        + f"\n\tLast time step: {data.index.max()}"
     )
 
 
