@@ -18,6 +18,9 @@ grid, this is the same as the grid spacing.
 All following arguments are paths to grid files to be converted. An arbitrary number can
 be specified, and they all use the same edge length.
 
+Example:
+> python grid_to_mesh.py 1.0 example1.grid .\grid_files\example2.grid
+
 Note:
 "Standard Emu grid file" means a whitespace delimited file where the first row is the
 number of nodes and all following rows contain exactly four columns: x, y, z, material.
